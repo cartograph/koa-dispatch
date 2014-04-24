@@ -1,29 +1,18 @@
+var app = require('koa')();
+var dispatch = require('.');
 
-var r = require('./');
-var koa = require('koa');
-var app = koa();
+dispatch.param('name', function* (name) {
+  if (name == 'walter') this.noAccess = true;
+  this.pet = { name: name };
+});
 
-var db = {
-  tobi: { name: 'tobi', species: 'ferret' },
-  loki: { name: 'loki', species: 'ferret' },
-  jane: { name: 'jane', species: 'ferret' }
-};
+function* hasPermission () {
+  if (this.noAccess) this.throw(403);
+}
 
-var pets = {
-  list: function *(){
-    var names = Object.keys(db);
-    this.body = 'pets: ' + names.join(', ');
-  },
+function* getPet () {
+  this.body = this.pet;
+}
 
-  show: function *(name){
-    var pet = db[name];
-    if (!pet) return this.error('cannot find that pet', 404);
-    this.body = pet.name + ' is a ' + pet.species;
-  }
-};
-
-app.use(r.get('/pets', pets.list));
-app.use(r.get('/pets/:name', pets.show));
-
+app.use(dispatch.get('/pets/:name', hasPermission, getPet));
 app.listen(3000);
-console.log('listening on port 3000');

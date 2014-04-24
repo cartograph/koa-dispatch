@@ -1,57 +1,40 @@
-# koa-route
+Simple router for Koa but with some nice features such as params and multiple
+route handlers.
 
- Uber simple route middleware for koa.
+```js
+var app = require('koa')();
+var dispatch = require('koa-dispatch');
+
+dispatch.param('name', function* (name) {
+  if (name == 'walter') this.noAccess = true;
+  this.pet = { name: name };
+});
+
+function* hasPermission () {
+  if (this.noAccess) this.throw(403);
+}
+
+function* getPet () {
+  this.body = this.pet;
+}
+
+app.use(dispatch.get('/pets/:name', hasPermission, getPet));
+app.listen(3000);
 
 ```
-var _ = require('koa-route');
-app.use(_.get('/pets', pets.list));
-app.use(_.get('/pets/:name', pets.show));
-```
-
- If you need a full-featured solution check out [koa-router](https://github.com/alexmingoia/koa-router),
- a Koa clone of express-resource.
 
 ## Installation
 
-```js
-$ npm install koa-route
+```
+$ npm install koa-dispatch
 ```
 
-## Example
+## Test
 
-  Contrived resource-oriented example:
-
-```js
-var _ = require('koa-route');
-var koa = require('koa');
-var app = koa();
-
-var db = {
-  tobi: { name: 'tobi', species: 'ferret' },
-  loki: { name: 'loki', species: 'ferret' },
-  jane: { name: 'jane', species: 'ferret' }
-};
-
-var pets = {
-  list: function *(){
-    var names = Object.keys(db);
-    this.body = 'pets: ' + names.join(', ');
-  },
-
-  show: function *(name){
-    var pet = db[name];
-    if (!pet) return this.error('cannot find that pet', 404);
-    this.body = pet.name + ' is a ' + pet.species;
-  }
-};
-
-app.use(_.get('/pets', pets.list));
-app.use(_.get('/pets/:name', pets.show));
-
-app.listen(3000);
-console.log('listening on port 3000');
+```
+$ make test
 ```
 
 ## License
 
-  MIT
+MIT
