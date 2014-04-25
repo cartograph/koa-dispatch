@@ -116,7 +116,21 @@ function paramify (params) {
   // filter out the params that we dont have paramifiers for and then return
   // those we do have
   var params = params.filter(function (key) { return !!paramifiers[key.name] })
-    .map(function (key) { return paramifiers[key.name] });
+    .map(function (key) { return paramifiers[key.name]; }).map(applyArg);
   // flatten the functions so we can yield them nicely
   return Array.prototype.concat.apply([], params);
+}
+
+/**
+ * @param {Array} fns
+ * @param {Number} i
+ * @api private
+ */
+
+function applyArg (fns, i) {
+  return fns.map(function (fn) {
+    return function () {
+      return fn.call(this, arguments[i]);
+    };
+  });
 }
