@@ -5,7 +5,7 @@
 var pathToRegexp = require('path-to-regexp');
 var methods = require('methods');
 var assert = require('assert');
-var debug = require('debug')('koa-route');
+var debug = require('debug')('koa-dispatch');
 
 /**
  * Method handlers.
@@ -48,7 +48,7 @@ function create (method) {
     // functions
     params = paramify(params);
 
-    return function* (next){
+    return function* (next) {
       // if the method of the route isn't set or doesn't equal the method of the
       // request, we simply skip
       if (method && method != this.method) return yield next;
@@ -56,7 +56,10 @@ function create (method) {
       var match = re.exec(this.path);
       // if the path of the request doesn't match the route, we skip
       if (!match) return yield next;
-      // we have a winner, the path matched one of our routes
+
+      // we have a winner, the path matched one of our routes, we expose the
+      // targeted controller
+      this.controller = fn.name;
 
       // decode uri components on all path arguments
       var args = match.slice(1).map(decodeURIComponent);
@@ -95,7 +98,7 @@ function apply (ctx, args) {
  * Paramification.
  */
 
-var paramifiers = {};
+exports._paramifiers = {};
 
 /**
  * @param {String}
@@ -104,7 +107,7 @@ var paramifiers = {};
  */
 
 exports.param = function (param, fn) {
-  (paramifiers[param] = paramifiers[param] || []).push(fn);
+  (exports._paramifiers[param] = exports._paramifiers[param] || []).push(fn);
 }
 
 /**
@@ -115,8 +118,10 @@ exports.param = function (param, fn) {
 function paramify (params) {
   // filter out the params that we dont have paramifiers for and then return
   // those we do have
-  var params = params.filter(function (key) { return !!paramifiers[key.name] })
-    .map(function (key) { return paramifiers[key.name]; }).map(applyArg);
+  var params = params
+    .filter(function (key) { return !!exports._paramifiers[key.name] })
+    .map(function (key) { return exports._paramifiers[key.name]; })
+    .map(applyArg);
   // flatten the functions so we can yield them nicely
   return Array.prototype.concat.apply([], params);
 }
